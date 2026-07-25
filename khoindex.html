@@ -1,1735 +1,658 @@
-import os
-import json
-
-# Setup web project structure directory
-project_dir = "trung_hoa_tai_web"
-os.makedirs(f"{project_dir}/public", exist_ok=True)
-os.makedirs(f"{project_dir}/src", exist_ok=True)
-
-# Define index.html with Google Fonts, custom CSS, WeasyPrint-like/Retro East Asian horror aesthetic
-html_content = """<!DOCTYPE html>
-<html lang="vi">
+<!DOCTYPE html>
+<html lang="vi" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TRÙNG HOA TÁI - Thế Giới Kinh Dị Cổ Đại Đông Phương</title>
-    <!-- Google Fonts -->
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (Vietnamese Free Fonts) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;600;700;900&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <!-- FontAwesome for UI icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Maindra+Ngu&family=Noto+Serif+TC:wght@400;600;700;900&family=Playfair+Display:ital,wght@0,600;0,800;1,400&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'crimson-dark': '#1a0000',
+                        'blood-red': '#8b0000',
+                        'bright-red': '#ff1a1a',
+                        'gold-accent': '#d4af37',
+                        'jade-green': '#00a86b',
+                        'dark-paper': '#0d0d0d',
+                        'border-red': '#4a0000'
+                    },
+                    fontFamily: {
+                        'serif-vi': ['"Noto Serif TC"', 'serif'],
+                        'title': ['"Cinzel Decorative"', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #050505;
+            color: #d1d5db;
+            font-family: 'Noto Serif TC', serif;
+            background-image: radial-gradient(#1a0000 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+        .text-gold { color: #d4af37; }
+        .bg-crimson-gradient {
+            background: linear-gradient(180deg, #2b0000 0%, #080000 100%);
+        }
+        .border-gold-glow {
+            border: 1px solid #d4af37;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #8b0000;
+            border-radius: 3px;
+        }
+        .gate-portal {
+            background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95)), url('https://drive.google.com/file/d/1FbFzuYfB1cCPm4qWwAZZpOAkcDAGefrv/view?usp=drive_link');
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
 </head>
-<body class="theme-dark-horror">
+<body class="custom-scrollbar">
 
-    <!-- AUDIO PLAYER CONTROLS (Atmospheric Ambient sound system) -->
-    <audio id="bgm-player" loop preload="auto">
-        <source src="https://cdn.pixabay.com/download/audio/2022/05/16/audio_c0e8a719c8.mp3?filename=dark-ambient-atmosphere-112046.mp3" type="audio/mpeg">
+    <!-- AUDIO KHÔNG KHÍ KINH DỊ -->
+    <audio id="bgmAudio" loop preload="auto">
+        <source src="https://assets.mixkit.co/music/preview/mixkit-scary-voodoo-drums-558.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- PORTAL / GATEWAY ENTRY SCREEN (Màn hình cổng vào) -->
-    <div id="portal-overlay" class="portal-overlay">
-        <div class="portal-content">
-            <div class="portal-seal">TRÙNG HOA</div>
-            <h1 class="portal-title">TRÙNG HOA TÁI</h1>
-            <p class="portal-subtitle">― 重 華 再 ―</p>
-            <p class="portal-desc">Vương triều cổ đại - Âm dương điên đảo - Nhập vai sinh tồn</p>
+    <!-- HỆ THỐNG ĐIỀU KHIỂN CHUYỂN GÓC NHÌN (CHỈ HIỆN VỚI ADMIN) -->
+    <div id="adminViewSwitch" class="hidden fixed top-2 right-2 z-50 bg-black/90 border border-red-600 p-2 rounded text-xs flex items-center space-x-2 shadow-2xl">
+        <span class="text-red-500 font-bold"><i class="fa-solid fa-user-shield"></i> CHẾ ĐỘ VIEW:</span>
+        <select id="viewModeSelect" onchange="toggleViewMode()" class="bg-red-950 text-white rounded px-2 py-1 border border-red-500">
+            <option value="admin">BAN ĐIỀU HÀNH (Full Admin Control)</option>
+            <option value="player">MẶC ĐỊNH NGƯỜI CHƠI (Player View)</option>
+        </select>
+    </div>
+
+    <!-- CỔNG VÀO (GATEWAY / LANDING SCREEN) -->
+    <div id="portalScreen" class="fixed inset-0 z-40 gate-portal flex flex-col items-center justify-center text-center p-4">
+        <div class="border-2 border-red-800 p-8 max-w-2xl bg-black/80 backdrop-blur-md rounded-lg shadow-2xl relative">
+            <h1 class="text-4xl md:text-6xl font-extrabold text-red-600 font-title mb-4 tracking-widest uppercase animate-pulse">TRÙNG HOA TÁI</h1>
+            <p class="text-sm md:text-base text-gray-300 mb-6 italic">"Vào thế kỷ XXIX... Cổng Âm Tào mở ra... Tử vong đồng nghĩa linh hồn hủy diệt."</p>
+            <div class="flex flex-col md:flex-row gap-4 justify-center">
+                <button onclick="enterWorld()" class="px-8 py-3 bg-red-900 hover:bg-red-700 text-white font-bold border border-red-500 rounded transition shadow-lg flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-torii-gate"></i> BẮT ĐẦU NHẬP CỔNG
+                </button>
+            </div>
+            <div class="mt-8 text-xs text-gray-400 border-t border-red-900/50 pt-4">
+                <p class="font-bold text-red-400 mb-2">BAN ĐIỀU HÀNH - SÁNG LẬP:</p>
+                <div class="flex wrap justify-center gap-3 text-xs">
+                    <a href="https://www.facebook.com/profile.php?id=61592344791540" target="_blank" class="hover:text-red-400"><i class="fa-brands fa-facebook"></i> Vịnh Quyển Trà</a> |
+                    <a href="https://www.facebook.com/profile.php?id=61590919357024" target="_blank" class="hover:text-red-400"><i class="fa-brands fa-facebook"></i> Biện Thừa Chí</a> |
+                    <a href="https://www.facebook.com/ngon.canhtac" target="_blank" class="hover:text-red-400"><i class="fa-brands fa-facebook"></i> Ngôn Cảnh Tắc</a> |
+                    <a href="https://www.facebook.com/k.nihtrung" target="_blank" class="hover:text-red-400"><i class="fa-brands fa-facebook"></i> Kinh Trung</a> |
+                    <a href="https://www.facebook.com/profile.php?id=61590717492629" target="_blank" class="hover:text-red-400"><i class="fa-brands fa-facebook"></i> Đức Diểu Quỳnh</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP STRUCTURE -->
+    <div id="mainApp" class="hidden min-h-screen flex flex-col">
+        <!-- HEADER / NAVIGATION BAR -->
+        <header class="bg-black/90 border-b border-red-900 sticky top-0 z-30 shadow-md">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchPage('home')">
+                    <i class="fa-solid fa-skull text-red-600 text-2xl"></i>
+                    <span class="font-title font-bold text-xl tracking-wider text-red-600">TRÙNG HOA TÁI</span>
+                </div>
+                
+                <!-- Navigation Tabs -->
+                <nav class="hidden md:flex space-x-6 text-sm font-semibold">
+                    <button onclick="switchPage('home')" class="hover:text-red-500 transition"><i class="fa-solid fa-house"></i> Trang Chủ</button>
+                    <button onclick="switchPage('world')" class="hover:text-red-500 transition"><i class="fa-solid fa-scroll"></i> Thế Giới & Quy Định</button>
+                    <button onclick="switchPage('shop')" class="hover:text-red-500 transition"><i class="fa-solid fa-store"></i> Thương Thành</button>
+                    <button onclick="switchPage('kimbang')" class="hover:text-red-500 transition text-yellow-500"><i class="fa-solid fa-crown"></i> Kim Bảng</button>
+                    <button onclick="switchPage('bachquuy')" class="hover:text-red-500 transition"><i class="fa-solid fa-book-skull"></i> Bách Quỷ Âm</button>
+                    <button onclick="switchPage('forum')" class="hover:text-red-500 transition"><i class="fa-solid fa-comments"></i> Diễn Đàn</button>
+                </nav>
+
+                <!-- User Controls -->
+                <div class="flex items-center space-x-3">
+                    <button id="cartBtn" onclick="openCartModal()" class="relative p-2 bg-red-950 border border-red-800 rounded text-red-400 hover:text-white">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        <span id="cartCount" class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">0</span>
+                    </button>
+
+                    <div id="authNav">
+                        <button onclick="openAuthModal()" class="px-4 py-1.5 bg-red-900 border border-red-600 text-white text-xs rounded font-bold hover:bg-red-800">
+                            <i class="fa-solid fa-user-lock"></i> Đăng Nhập / Đăng Ký
+                        </button>
+                    </div>
+
+                    <button onclick="toggleAudio()" class="p-2 border border-gray-700 rounded text-gray-400 hover:text-white">
+                        <i id="audioIcon" class="fa-solid fa-volume-xmark"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT CONTAINER -->
+        <main class="flex-grow max-w-7xl w-full mx-auto p-4">
             
-            <div class="portal-warning">
-                <i class="fa-solid => fa-skull-crossbones"></i> CẢNH BÁO: Tử vong trong Trùng Hoa đồng nghĩa với việc linh hồn bị hủy diệt hoàn toàn ở hiện thực.
-            </div>
-
-            <button id="btn-enter-gate" class="btn-portal">
-                <span class="btn-text">KHAI MỞ ÂM TÀO MÔN</span>
-                <span class="btn-subtext">(Bấm để bắt đầu & Bật Âm Thanh)</span>
-            </button>
-
-            <!-- EXECUTIVE BOARD LINKAGE ON PORTAL -->
-            <div class="portal-founders">
-                <h4>BAN ĐIỀU HÀNH & SÁNG LẬP</h4>
-                <div class="founder-tags">
-                    <a href="https://www.facebook.com/profile.php?id=61592344791540" target="_blank"><i class="fa-brands fa-facebook"></i> Vịnh Quyển Trà</a>
-                    <a href="https://www.facebook.com/profile.php?id=61590919357024" target="_blank"><i class="fa-brands fa-facebook"></i> Biện Thừa Chí</a>
-                    <a href="https://www.facebook.com/ngon.canhtac" target="_blank"><i class="fa-brands fa-facebook"></i> Ngôn Cảnh Tắc</a>
-                    <a href="https://www.facebook.com/k.nihtrung" target="_blank"><i class="fa-brands fa-facebook"></i> Kinh Trung</a>
-                    <a href="https://www.facebook.com/profile.php?id=61590717492629" target="_blank"><i class="fa-brands fa-facebook"></i> Đức Diểu Quỳnh</a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ADMIN SWITCH BAR (Floating Bar for Executive View Mode) -->
-    <div id="admin-view-bar" class="admin-view-bar hidden">
-        <div class="admin-bar-info">
-            <span class="badge-admin"><i class="fa-solid fa-user-shield"></i> BAN ĐIỀU HÀNH</span>
-            <span id="admin-user-display">kinhnha010@gmail.com</span>
-        </div>
-        <div class="admin-bar-actions">
-            <button id="btn-toggle-view" class="btn-sm btn-gold"><i class="fa-solid fa-eye"></i> Đổi góc nhìn: <strong id="current-view-mode">BAN ĐIỀU HÀNH</strong></button>
-            <button id="btn-admin-panel-modal" class="btn-sm btn-crimson"><i class="fa-solid fa-sliders"></i> Quản Lý Hệ Thống</button>
-            <button id="btn-admin-logout" class="btn-sm btn-dark"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</button>
-        </div>
-    </div>
-
-    <!-- MAIN HEADER & NAVIGATION BAR -->
-    <header class="main-header">
-        <div class="header-container">
-            <div class="logo-area" onclick="navigateTo('trang-chu')">
-                <span class="logo-seal">重華</span>
-                <div class="logo-text">
-                    <h1>TRÙNG HOA TÁI</h1>
-                    <span class="sub">Hệ Thống Sinh Tồn Cổ Đại</span>
-                </div>
-            </div>
-
-            <nav class="nav-menu">
-                <a href="#" class="nav-link active" data-page="trang-chu"><i class="fa-solid fa-house"></i> Trang Chủ</a>
-                <a href="#" class="nav-link" data-page="the-gioi"><i class="fa-solid fa-scroll"></i> Thế Giới & Quy Định</a>
-                <a href="#" class="nav-link" data-page="dia-ly"><i class="fa-solid fa-map-location-dot"></i> Địa Lý & Cấm Địa</a>
-                <a href="#" class="nav-link" data-page="bach-quy"><i class="fa-solid fa-ghost"></i> Bách Quỷ Âm</a>
-                <a href="#" class="nav-link" data-page="di-su"><i class="fa-solid fa-book-dead"></i> Dị Sự Bảng</a>
-                <a href="#" class="nav-link" data-page="thuong-thanh"><i class="fa-solid fa-store"></i> Thương Thành</a>
-                <a href="#" class="nav-link" data-page="kim-bang"><i class="fa-solid fa-trophy"></i> Kim Bảng</a>
-                <a href="#" class="nav-link" data-page="dien-dan"><i class="fa-solid fa-comments"></i> Diễn Đàn</a>
-            </nav>
-
-            <div class="user-action-area">
-                <button id="btn-music-toggle" class="btn-icon" title="Bật/Tắt Âm Thanh"><i class="fa-solid fa-volume-high"></i></button>
-                <div id="user-profile-menu">
-                    <button id="btn-open-login" class="btn-primary-red"><i class="fa-solid fa-user-lock"></i> Đăng Nhập / Đăng Ký</button>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- MAIN CONTENT CONTAINER WITH MULTI-PAGE SPA STRUCTURE -->
-    <main class="main-body container">
-
-        <!-- GLOBAL SEARCH BAR -->
-        <div class="global-search-box">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="global-search-input" placeholder="Tìm kiếm bách quỷ, dị sự, vật phẩm, ID người chơi (Nhập từ khóa)...">
-            <button id="btn-global-search" class="btn-search">Tìm Kiếm</button>
-        </div>
-
-        <!-- PAGE 1: TRANG CHỦ (HOME PAGE) -->
-        <section id="page-trang-chu" class="page-content active">
-            <!-- HERO BANNER -->
-            <div class="hero-banner">
-                <img id="home-banner-img" src="https://drive.google.com/file/d/1FbFzuYfB1cCPm4qWwAZZpOAkcDAGefrv/view?usp=drive_link" alt="Trùng Hoa Tái Banner" class="banner-img" onerror="this.src='https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1200'">
-                <div class="banner-overlay">
-                    <h2>VƯƠNG TRIỀU TRÙNG HOA ― SỔ TAY SINH TỒN</h2>
-                    <p>Cổng Âm Tào tái mở, linh hồn giam cầm. Tàn sát oán quỷ để đổi lấy đường về hiện thực!</p>
-                </div>
-            </div>
-
-            <!-- INTRO SECTION (Mô tả hệ thống) -->
-            <div class="content-card intro-card">
-                <div class="card-header">
-                    <h3><i class="fa-solid fa-torii-gate"></i> THIẾT LẬP THẾ GIỚI KHỞI NGUỒN</h3>
-                    <div class="admin-only edit-btn-wrap">
-                        <button class="btn-xs btn-edit" onclick="editIntroText()"><i class="fa-solid fa-pen"></i> Chỉnh sửa giới thiệu</button>
+            <!-- SEARCH BAR CENTRAL -->
+            <div class="mb-6 bg-red-950/40 p-4 rounded border border-red-900/60 flex flex-col md:flex-row gap-3 items-center justify-between">
+                <div class="flex-grow w-full">
+                    <div class="relative">
+                        <input type="text" id="globalSearchInput" placeholder="Tìm kiếm vật phẩm, quỷ dị, ID người chơi..." class="w-full bg-black/80 border border-red-900 rounded pl-10 pr-4 py-2 text-sm text-gray-200 focus:outline-none focus:border-red-600">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-500"></i>
                     </div>
                 </div>
-                <div id="intro-body-text" class="card-body styled-text">
-                    <p>Vào thế kỷ XXIX, công nghệ thực tế giả lập phát triển vượt bậc. Trò chơi <strong>Trùng Hoa Tái</strong> chính thức mở máy chủ, tái hiện trọn vẹn vương triều cổ đại Đông Phương hư cấu với ma quỷ, dị sự và những điều không thể lý giải.</p>
-                    <p>Ngay ngày khai mở, tất cả người chơi phát hiện <em>không thể đăng xuất</em>. Thân xác hiện thực rơi vào trạng thái thực vật, linh hồn bị khóa tại Trùng Hoa. Tử vong tại đây đồng nghĩa linh hồn bị tiêu diệt hoàn toàn!</p>
-                    <div class="alert-box-crimson">
-                        <strong>MỤC TIÊU DUY NHẤT:</strong> Hoàn thành mười lăm (15) Dị Sự để nhận quyền trở về hiện thực.
+                <button onclick="performGlobalSearch()" class="px-6 py-2 bg-red-900 hover:bg-red-800 text-white text-sm font-bold rounded border border-red-600 w-full md:w-auto">
+                    Tìm Kiếm
+                </button>
+            </div>
+
+            <!-- PAGE 1: TRANG CHỦ (HOME) -->
+            <section id="page-home" class="page-section space-y-8">
+                <!-- BANNER VÀ GIỚI THIỆU -->
+                <div class="relative rounded-lg overflow-hidden border border-red-900 shadow-2xl">
+                    <img id="homeBannerImg" src="https://drive.google.com/file/d/1FbFzuYfB1cCPm4qWwAZZpOAkcDAGefrv/view?usp=drive_link" alt="Banner Trùng Hoa Tái" class="w-full h-64 md:h-96 object-cover opacity-60">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-6">
+                        <h2 class="text-3xl md:text-5xl font-bold font-title text-red-600 mb-2">VƯƠNG TRIỀU TRÙNG HOA</h2>
+                        <p class="text-sm md:text-base text-gray-300 max-w-3xl">Chào mừng bạn đến với dự án nhập vai sinh tồn cổ đại Đông Phương. Nơi ranh giới giữa âm và dương bị xáo trộn, mạng sống chỉ có một và cơ hội trở về hiện thực chỉ dành cho kẻ sống sót qua 15 dị sự.</p>
+                    </div>
+                    <!-- Admin Tool: Edit Banner -->
+                    <div class="admin-only hidden absolute top-4 right-4">
+                        <button onclick="editBannerUrl()" class="px-3 py-1 bg-black/80 border border-red-500 text-red-400 text-xs rounded hover:bg-red-900"><i class="fa-solid fa-image"></i> Sửa Link Ảnh Banner</button>
                     </div>
                 </div>
-            </div>
 
-            <!-- QUICK FEATURE GRID -->
-            <div class="feature-grid">
-                <div class="feature-item" onclick="navigateTo('bach-quy')">
-                    <i class="fa-solid fa-ghost feature-icon"></i>
-                    <h4>Bách Quỷ Âm</h4>
-                    <p>Sổ tay tra cứu thông tin tà vật, oán hồn và các loại quỷ dị.</p>
-                </div>
-                <div class="feature-item" onclick="navigateTo('di-su')">
-                    <i class="fa-solid fa-scroll feature-icon"></i>
-                    <h4>Dị Sự Bảng</h4>
-                    <p>Bảng treo thưởng nhiệm vụ diệt quỷ phân theo 4 cấp Thi - Ngân - Hoàng - Phỉ.</p>
-                </div>
-                <div class="feature-item" onclick="navigateTo('thuong-thanh')">
-                    <i class="fa-solid fa-coins feature-icon"></i>
-                    <h4>Thương Thành</h4>
-                    <p>Mua sắm bùa chú, pháp khí bằng Hoa Tiền, Công Đức và Âm Đức.</p>
-                </div>
-                <div class="feature-item" onclick="navigateTo('kim-bang')">
-                    <i class="fa-solid fa-crown feature-icon"></i>
-                    <h4>Kim Bảng Đề Danh</h4>
-                    <p>Top 6 người chơi xuất sắc nhất vương triều Trùng Hoa.</p>
-                </div>
-            </div>
-        </section>
+                <!-- CÁC THÔNG TIN QUAN TRỌNG & LIÊN HỆ -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-dark-paper border border-red-900/60 p-5 rounded shadow">
+                        <h3 class="text-lg font-bold text-red-500 border-b border-red-900 pb-2 mb-3"><i class="fa-solid fa-shield-halved"></i> BAN ĐIỀU HÀNH</h3>
+                        <ul class="text-sm space-y-2">
+                            <li><strong>Vịnh Quyển Trà:</strong> <a href="https://www.facebook.com/profile.php?id=61592344791540" target="_blank" class="text-red-400 hover:underline">Liên hệ Facebook</a></li>
+                            <li><strong>Biện Thừa Chí:</strong> <a href="https://www.facebook.com/profile.php?id=61590919357024" target="_blank" class="text-red-400 hover:underline">Liên hệ Facebook</a></li>
+                            <li><strong>Ngôn Cảnh Tắc:</strong> <a href="https://www.facebook.com/ngon.canhtac" target="_blank" class="text-red-400 hover:underline">Liên hệ Facebook</a></li>
+                            <li><strong>Kinh Trung:</strong> <a href="https://www.facebook.com/k.nihtrung" target="_blank" class="text-red-400 hover:underline">Liên hệ Facebook</a></li>
+                            <li><strong>Đức Diểu Quỳnh:</strong> <a href="https://www.facebook.com/profile.php?id=61590717492629" target="_blank" class="text-red-400 hover:underline">Liên hệ Facebook</a></li>
+                        </ul>
+                    </div>
 
-        <!-- PAGE 2: THẾ GIỚI & QUY ĐỊNH (WORLD & RULES) -->
-        <section id="page-the-gioi" class="page-content">
-            <div class="section-title">
-                <h2>THIẾT LẬP THẾ GIỚI & QUY ĐỊNH ROLEPLAY</h2>
-                <div class="title-line"></div>
-            </div>
+                    <div class="bg-dark-paper border border-red-900/60 p-5 rounded shadow">
+                        <h3 class="text-lg font-bold text-red-500 border-b border-red-900 pb-2 mb-3"><i class="fa-solid fa-link"></i> KÊNH THÔNG TIN CHÍNH THỨC</h3>
+                        <div class="space-y-3 text-sm">
+                            <a href="https://www.facebook.com/groups/1385121653516597" target="_blank" class="block p-2 bg-red-950/50 border border-red-900 rounded hover:bg-red-900 transition text-center font-semibold text-red-200">
+                                <i class="fa-brands fa-facebook"></i> THAM GIA GROUP ROLEPLAY
+                            </a>
+                            <a href="https://www.facebook.com/profile.php?id=61591857702519" target="_blank" class="block p-2 bg-red-950/50 border border-red-900 rounded hover:bg-red-900 transition text-center font-semibold text-red-200">
+                                <i class="fa-solid fa-flag"></i> FANPAGE CHÍNH THỨC
+                            </a>
+                        </div>
+                    </div>
 
-            <div class="content-card">
-                <div class="tab-buttons">
-                    <button class="tab-btn active" onclick="switchTab('rule-tab-1', this)">QUY TẮC HỆ THỐNG</button>
-                    <button class="tab-btn" onclick="switchTab('rule-tab-2', this)">QUY ĐỊNH ROLEPLAY</button>
-                    <button class="tab-btn" onclick="switchTab('rule-tab-3', this)">TIỀN TỆ & QUY ĐỔI</button>
-                    <button class="tab-btn" onclick="switchTab('rule-tab-4', this)">THIẾT LẬP NHÂN VẬT</button>
+                    <div class="bg-dark-paper border border-red-900/60 p-5 rounded shadow">
+                        <h3 class="text-lg font-bold text-gold border-b border-red-900 pb-2 mb-3"><i class="fa-solid fa-bullhorn"></i> HỆ THỐNG THÔNG BÁO</h3>
+                        <p class="text-xs text-gray-400 italic">"Mỗi 10 ngày, người chơi bắt buộc phải tham gia tối thiểu 2 Dị Sự. Vi phạm sẽ bị khấu trừ 30 Công Đức."</p>
+                    </div>
                 </div>
+            </section>
 
-                <div id="rule-tab-1" class="tab-content active styled-text">
-                    <h3>V. QUY TẮC CỦA HỆ THỐNG</h3>
-                    <ul>
-                        <li><strong>Thứ nhất:</strong> Không được tiết lộ thân phận người đến từ tương lai với cư dân bản địa. Mọi cư dân coi bạn là người gốc Trùng Hoa.</li>
-                        <li><strong>Thứ hai:</strong> Được phép tiết lộ thân phận với người chơi khác. Tuy nhiên Hệ Thống không công bố danh sách, việc nhận ra nhau dựa trên quan sát và tin tưởng.</li>
-                        <li><strong>Thứ ba:</strong> Tử vong trong trò chơi đồng nghĩa với tử vong thật. Linh hồn bị hủy diệt, không thể hồi sinh.</li>
-                        <li><strong>Thứ tư:</strong> Mỗi 10 ngày, người chơi bắt buộc tham gia tối thiểu 2 dị sự. Nếu không sẽ bị khấu trừ <strong>Công Đức</strong>.</li>
+            <!-- PAGE 2: THẾ GIỚI & QUY ĐỊNH (WORLD & RULES) -->
+            <section id="page-world" class="page-section hidden bg-dark-paper border border-red-900/80 p-6 rounded-lg space-y-6">
+                <h2 class="text-2xl font-bold text-red-600 border-b border-red-900 pb-2">THIẾT LẬP THẾ GIỚI & QUY ĐỊNH ROLEPLAY</h2>
+                <div class="space-y-4 text-sm text-gray-300 leading-relaxed max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                    <h3 class="text-base font-bold text-gold">I. Khởi Nguồn & Quy Tắc Sinh Tồn</h3>
+                    <p>Trùng Hoa Tái là trò chơi thực tế giả lập tái hiện vương triều Trùng Hoa. Khi máy chủ mở, toàn bộ người chơi không thể đăng xuất. Tử vong trong Trùng Hoa là tử vong thật ngoài hiện thực.</p>
+                    <p><strong>Điều kiện rời khỏi:</strong> Hoàn thành đủ 15 Dị Sự và còn sống.</p>
+
+                    <h3 class="text-base font-bold text-gold">II. Hệ Thống Tiền Tệ</h3>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>Hoa Tiền:</strong> Tiền tệ lưu thông chính (Ăn uống, thuê nhà, mua bán sinh hoạt).</li>
+                        <li><strong>Công Đức:</strong> Tích lũy do Hệ Thống quản lý (Đổi vật phẩm thường, chữa trị, đổi 1 Công Đức = 50 Hoa Tiền).</li>
+                        <li><strong>Âm Đức:</strong> Nhận khi hoàn thành Dị Sự (Đổi vật phẩm hiếm, pháp khí cổ, 1 Âm Đức = 500 Hoa Tiền).</li>
                     </ul>
-                </div>
 
-                <div id="rule-tab-2" class="tab-content styled-text">
-                    <h3>I. QUY ĐỊNH ROLEPLAY & BÌNH LUẬN</h3>
-                    <p>1. Tất cả hoạt động tuân theo bối cảnh vương triều Trùng Hoa. Người chơi chỉ điều khiển nhân vật của chính mình.</p>
-                    <p>2. Bình luận hợp lệ: Tối thiểu <strong>05 dòng trên điện thoại</strong> hoặc <strong>03 dòng trên máy tính</strong>. Không tính biểu tượng cảm xúc, ký tự lặp lại.</p>
-                    <p>3. Thưởng sinh hoạt: +20 Hoa Tiền / bình luận hợp lệ. Bài đăng role sinh hoạt mới: +100 Hoa Tiền, +2 Công Đức (Kèm hashtag #sinh_hoat).</p>
-                    <p>4. Thưởng đồng diễn: Tag tiêu đề +50 Hoa Tiền, đồng diễn trong comment +30 Hoa Tiền.</p>
+                    <h3 class="text-base font-bold text-gold">III. Quy Định Roleplay & Tính Thưởng</h3>
+                    <p>Mỗi bình luận hợp lệ (≥ 5 dòng điện thoại hoặc 3 dòng máy tính): <strong>+20 Hoa Tiền</strong>.</p>
+                    <p>Bài đăng Role sinh hoạt mới (#sinh hoạt): <strong>+100 Hoa Tiền, +2 Công Đức</strong>.</p>
                 </div>
+            </section>
 
-                <div id="rule-tab-3" class="tab-content styled-text">
-                    <h3>IX. HỆ THỐNG TIỀN TỆ</h3>
-                    <div class="grid-3col">
-                        <div class="money-box">
-                            <h4 class="color-copper"><i class="fa-solid fa-coins"></i> ĐỒNG TIỀN TRÙNG HOA (Hoa Tiền)</h4>
-                            <p>Tiền tệ lưu thông toàn vương triều dùng để ăn uống, mua bán, thuê nhà, nộp thuế. Kiếm từ sinh hoạt và nhiệm vụ.</p>
-                        </div>
-                        <div class="money-box">
-                            <h4 class="color-gold"><i class="fa-solid fa-star"></i> CÔNG ĐỨC</h4>
-                            <p>Điểm tích lũy Hệ Thống hiển thị riêng cho người chơi. Dùng mua bùa chú phổ thông, chữa thương. <strong>1 Công Đức = 50 Hoa Tiền</strong> (Quy đổi 1 chiều).</p>
-                        </div>
-                        <div class="money-box">
-                            <h4 class="color-crimson"><i class="fa-solid fa-gem"></i> ÂM ĐỨC</h4>
-                            <p>Điểm thưởng quý giá nhất chỉ nhận khi hoàn thành Dị Sự. Dùng đổi pháp khí hiếm, bùa thế mạng. <strong>1 Âm Đức = 500 Hoa Tiền</strong> (Không thể chuyển nhượng).</p>
-                        </div>
+            <!-- PAGE 3: THƯƠNG THÀNH (SHOP) -->
+            <section id="page-shop" class="page-section hidden space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-center border-b border-red-900 pb-3 gap-4">
+                    <h2 class="text-2xl font-bold text-red-600 font-title"><i class="fa-solid fa-store"></i> THƯƠNG THÀNH HỆ THỐNG</h2>
+                    <div id="adminShopControls" class="admin-only hidden">
+                        <button onclick="openAddProductModal()" class="px-4 py-2 bg-red-900 text-white text-xs font-bold rounded border border-red-500 hover:bg-red-800">
+                            <i class="fa-solid fa-plus"></i> Thêm Vật Phẩm Mới
+                        </button>
                     </div>
                 </div>
 
-                <div id="rule-tab-4" class="tab-content styled-text">
-                    <h3>VI. THIẾT LẬP NHÂN VẬT (OC)</h3>
-                    <p><strong>Thân phận cho phép:</strong> Con cháu thế gia, Thường dân, Giang hồ hiệp khách, Thương nhân, Học giả, Lang y, Người hành nghề dân gian (đạo sĩ, thầy pháp, người làm tang lễ...)...</p>
-                    <p class="color-crimson"><strong>NGHIÊM CẤM:</strong> Hoàng thất, Quan lại, Hậu cung, Yêu quái, Thần tiên, Nhân vật sở hữu dị năng/siêu nhiên ngoài quy luật bùa chú/phong thủy.</p>
+                <!-- Danh sách Vật Phẩm -->
+                <div id="productListGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Dữ liệu vật phẩm sẽ được JS load tại đây -->
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- PAGE 3: ĐỊA LÝ & CẤM ĐỊA (GEOGRAPHY) -->
-        <section id="page-dia-ly" class="page-content">
-            <div class="section-title">
-                <h2>ĐỊA LÝ VƯƠNG TRIỀU TRÙNG HOA</h2>
-                <div class="title-line"></div>
-            </div>
-
-            <div class="geo-grid">
-                <div class="geo-card">
-                    <h4>THIÊN KINH</h4>
-                    <span class="geo-loc">Trung tâm vương triều</span>
-                    <p>Kinh đô phồn hoa nhất, nơi đặt Hoàng thành và long mạch mạnh nhất. Trận pháp hộ quốc giữ nội thành an toàn trước ma quỷ.</p>
-                </div>
-                <div class="geo-card">
-                    <h4>THANH CHÂU</h4>
-                    <span class="geo-loc">Phía Đông Bắc</span>
-                    <p>Kho lương thiên hạ, sông ngòi chằng chịt. Thường xuất hiện Thủy Quỷ và oán hồn chưa siêu thoát.</p>
-                </div>
-                <div class="geo-card">
-                    <h4>VÂN CHÂU</h4>
-                    <span class="geo-loc">Phía Bắc</span>
-                    <p>Khí hậu lạnh giá, núi cao rừng già. Nơi ẩn cư của các đạo quán và môn phái. Nơi xuất hiện Sơn Quỷ.</p>
-                </div>
-                <div class="geo-card danger-zone">
-                    <h4>HUYỀN CHÂU</h4>
-                    <span class="geo-loc">Tây Bắc - Âm khí cực nặng</span>
-                    <p>Chiến trường cổ Cổng Âm Tào. Nơi tập trung phần lớn dị sự cấp Hoàng và Phỉ. Nghĩa địa cổ khắp nơi.</p>
-                </div>
-                <div class="geo-card">
-                    <h4>MINH CHÂU & GIANG CHÂU</h4>
-                    <span class="geo-loc">Phía Đông & Phía Nam</span>
-                    <p>Giao thương hàng hải, sông nước đan xen. Lưu truyền truyền thuyết tàu ma và thủy quỷ chết trôi.</p>
-                </div>
-                <div class="geo-card">
-                    <h4>LINH CHÂU & SỞ CHÂU</h4>
-                    <span class="geo-loc">Tây Nam & Phía Tây</span>
-                    <p>Linh Châu đầy rừng rậm đầm lầy chứa tà vật; Sở Châu nổi tiếng rèn đúc pháp khí từ hầm mỏ cổ.</p>
-                </div>
-                <div class="geo-card camsa-zone">
-                    <h4>THIÊN MÔN SƠN & CẤM ĐỊA TRÙNG HOA</h4>
-                    <span class="geo-loc">Vùng Đất Cấm Bị Âm Khí Nuốt Chửng</span>
-                    <p>Nơi diễn ra Dị Sự cấp Phỉ. Nơi chứa đựng phần thưởng lớn nhất và nguy cơ diệt vong linh hồn cao nhất!</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- PAGE 4: BÁCH QUỶ ÂM (GHOST ENCYCLOPEDIA) -->
-        <section id="page-bach-quy" class="page-content">
-            <div class="section-title">
-                <h2>BÁCH QUỶ ÂM ― SỔ TAY TÀ VẬT</h2>
-                <div class="title-line"></div>
-            </div>
-
-            <div class="admin-only mb-15">
-                <button class="btn-primary-red" onclick="openAddGhostModal()"><i class="fa-solid fa-plus"></i> Thêm Loại Quỷ Mới (Ban Điều Hành)</button>
-            </div>
-
-            <div class="filter-bar">
-                <span>Phân cấp nguy hiểm: </span>
-                <button class="filter-btn active" onclick="filterGhosts('ALL')">Tất cả</button>
-                <button class="filter-btn" onclick="filterGhosts('Du Hồn')">Du Hồn</button>
-                <button class="filter-btn" onclick="filterGhosts('Oán Hồn')">Oán Hồn</button>
-                <button class="filter-btn" onclick="filterGhosts('Lệ Quỷ')">Lệ Quỷ</button>
-                <button class="filter-btn" onclick="filterGhosts('Hung Sát')">Hung Sát</button>
-                <button class="filter-btn" onclick="filterGhosts('Quỷ Tướng')">Quỷ Tướng / Vương</button>
-            </div>
-
-            <div id="ghost-list-grid" class="ghost-grid">
-                <!-- Dynamic Ghost Cards rendered via JS -->
-            </div>
-        </section>
-
-        <!-- PAGE 5: DỊ SỰ BẢNG (QUEST BOARD) -->
-        <section id="page-di-su" class="page-content">
-            <div class="section-title">
-                <h2>DỊ SỰ BẢNG ― BẢNG TREO THƯỞNG DIỆT QUỶ</h2>
-                <div class="title-line"></div>
-            </div>
-
-            <div class="admin-only mb-15">
-                <button class="btn-primary-red" onclick="openAddQuestModal()"><i class="fa-solid fa-plus"></i> Thêm Dị Sự Mới (Ban Điều Hành)</button>
-            </div>
-
-            <div id="quest-list-container" class="quest-container">
-                <!-- Dynamic Quests rendered via JS -->
-            </div>
-        </section>
-
-        <!-- PAGE 6: THƯƠNG THÀNH HỆ THỐNG (SYSTEM SHOP & CART) -->
-        <section id="page-thuong-thanh" class="page-content">
-            <div class="section-title">
-                <h2>THƯƠNG THÀNH HỆ THỐNG</h2>
-                <div class="title-line"></div>
-            </div>
-
-            <div class="admin-only mb-15">
-                <button class="btn-primary-red" onclick="openAddProductModal()"><i class="fa-solid fa-plus"></i> Thêm Vật Phẩm Mới (Ban Điều Hành)</button>
-            </div>
-
-            <div class="shop-layout">
-                <!-- Shop Left: Product Grid -->
-                <div class="shop-main">
-                    <div class="shop-tabs">
-                        <button class="shop-tab-btn active" onclick="filterShop('ALL')">Tất Cả Vật Phẩm</button>
-                        <button class="shop-tab-btn" onclick="filterShop('Phổ Thông')">Thương Thành Thường (Hoa Tiền / Công Đức)</button>
-                        <button class="shop-tab-btn" onclick="filterShop('Hiếm')">Thương Thành Hiếm (Âm Đức / Cao Cấp)</button>
-                    </div>
-
-                    <div id="shop-product-grid" class="product-grid">
-                        <!-- Dynamic Products Rendered Here -->
-                    </div>
+            <!-- PAGE 4: KIM BẢNG ĐỀ DANH -->
+            <section id="page-kimbang" class="page-section hidden space-y-6">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold font-title text-yellow-500 tracking-widest"><i class="fa-solid fa-crown"></i> KIM BẢNG ĐỀ DANH</h2>
+                    <p class="text-xs text-gray-400 mt-1">Bảng xếp hạng 6 vị trí cao nhất của Vương Triều Trùng Hoa</p>
                 </div>
 
-                <!-- Shop Right: Cart / Inventory Box -->
-                <div class="shop-sidebar">
-                    <div class="cart-box">
-                        <h3><i class="fa-solid fa-basket-shopping"></i> GIỎ HÀNG THÙNG ĐỒ</h3>
-                        <div class="cart-status">
-                            Sức chứa: <span id="cart-count">0</span> / 10 vật phẩm
-                        </div>
-                        <div id="cart-items-list" class="cart-items-list">
-                            <p class="empty-cart-msg">Chưa có vật phẩm trong giỏ hàng.</p>
-                        </div>
-                        <div class="cart-summary">
-                            <div>Tổng Hoa Tiền: <span id="cart-total-money" class="color-gold">0</span></div>
-                            <button id="btn-checkout" class="btn-checkout-gold" onclick="processCartPurchase()"><i class="fa-solid fa-bag-shopping"></i> Tiến Hành Mua Hàng</button>
-                        </div>
-                    </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="kimBangGrid">
+                    <!-- Loaded dynamically -->
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- PAGE 7: KIM BẢNG ĐỀ DANH (RANKING) -->
-        <section id="page-kim-bang" class="page-content">
-            <div class="section-title">
-                <h2>KIM BẢNG ĐỀ DANH ― VANG DANH THIÊN HẠ</h2>
-                <p class="sub-title-desc">Bảng xếp hạng 06 vị trí người chơi kiệt xuất nhất Trùng Hoa Vương Triều</p>
-                <div class="title-line"></div>
-            </div>
+            <!-- PAGE 5: BÁCH QUỶ ÂM -->
+            <section id="page-bachquuy" class="page-section hidden space-y-6">
+                <h2 class="text-2xl font-bold text-red-600 font-title border-b border-red-900 pb-2"><i class="fa-solid fa-book-skull"></i> BÁCH QUỶ ÂM</h2>
+                <div id="ghostListGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Ghost items loaded dynamically -->
+                </div>
+            </section>
 
-            <div class="admin-only mb-15">
-                <button class="btn-primary-red" onclick="openManageRankModal()"><i class="fa-solid fa-user-pen"></i> Chỉnh Sửa Danh Sách Kim Bảng (Ban Điều Hành)</button>
-            </div>
-
-            <div id="kim-bang-list" class="kim-bang-grid">
-                <!-- Top 6 Members dynamic list -->
-            </div>
-        </section>
-
-        <!-- PAGE 8: DIỄN ĐÀN (FORUM & ANONYMOUS CHAT) -->
-        <section id="page-dien-dan" class="page-content">
-            <div class="section-title">
-                <h2>DIỄN ĐÀN TRÙNG HOA & TIN MẬT ẨN DANH</h2>
-                <div class="title-line"></div>
-            </div>
-
-            <div class="forum-layout">
-                <!-- Forum Sidebar -->
-                <div class="forum-sidebar">
-                    <div class="anon-profile-box">
-                        <h4><i class="fa-solid fa-user-ninja"></i> THIẾT LẬP ẨN DANH</h4>
-                        <p class="text-sm">Khi phát hiện mật khẩu diễn đàn, bạn có thể đăng tin ẩn danh. Tối đa 2 lần đổi tên miễn phí, lần 3 cần <strong>30 Công Đức</strong>.</p>
-                        <div class="anon-status-area">
-                            <div>Tên ẩn danh hiện tại: <strong id="current-anon-name" class="color-crimson">Chưa đặt</strong></div>
-                            <div>Số lần đã đổi: <span id="anon-rename-count">0</span>/2</div>
-                        </div>
-                        <button class="btn-sm btn-gold mt-10" onclick="openAnonRenameModal()"><i class="fa-solid fa-signature"></i> Đặt / Đổi Tên Ẩn Danh</button>
-                    </div>
-
-                    <div class="forum-rules-box">
-                        <h4><i class="fa-solid fa-gavel"></i> LƯU Ý DIỄN ĐÀN</h4>
-                        <p>Quản lý web (Ban Điều Hành) có quyền nhìn thấy danh tính thật đằng sau tên ẩn danh và có quyền xóa bài đăng vi phạm quy định.</p>
-                    </div>
+            <!-- PAGE 6: DIỄN ĐÀN & AN NYM MESSAGES -->
+            <section id="page-forum" class="page-section hidden space-y-6">
+                <div class="flex justify-between items-center border-b border-red-900 pb-2">
+                    <h2 class="text-2xl font-bold text-red-600 font-title"><i class="fa-solid fa-comments"></i> DIỄN ĐÀN TRÙNG HOA</h2>
+                    <button onclick="openNewPostModal()" class="px-4 py-2 bg-red-900 text-white text-xs font-bold rounded hover:bg-red-800 border border-red-600">
+                        <i class="fa-solid fa-pen"></i> Đăng Bài Mới
+                    </button>
                 </div>
 
-                <!-- Forum Main Feed -->
-                <div class="forum-main">
-                    <div class="create-post-box">
-                        <h3>ĐĂNG BÀI VIẾT / TIN MẬT DIỄN ĐÀN</h3>
-                        <div class="post-form-controls">
-                            <input type="text" id="post-title-input" placeholder="Tiêu đề bài viết hoặc mã mật mã...">
-                            
-                            <!-- Formatting Tools -->
-                            <div class="editor-toolbar">
-                                <button type="button" onclick="formatText('bold')" title="In đậm"><b>B</b></button>
-                                <button type="button" onclick="formatText('italic')" title="In nghiêng"><i>I</i></button>
-                                <button type="button" onclick="formatText('uppercase')" title="In hoa">AA</button>
-                                <button type="button" onclick="formatText('large')" title="Chữ to">T+</button>
-                                <button type="button" onclick="formatText('small')" title="Chữ nhỏ">t-</button>
-                            </div>
-
-                            <textarea id="post-content-input" rows="4" placeholder="Nội dung bài viết (Chấp nhận hashtag #sinh_hoat, địa điểm, thời gian, ký tên OC)..."></textarea>
-                            
-                            <div class="post-meta-inputs">
-                                <input type="text" id="post-image-url" placeholder="Đường link ảnh minh họa (Google Drive/Album link)...">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="post-as-anon"> Đăng bài dưới tên Ẩn Danh (Chỉ hiện khi phát hiện mật khẩu)
-                                </label>
-                            </div>
-
-                            <button class="btn-primary-red btn-block mt-10" onclick="createNewPost()"><i class="fa-solid fa-paper-plane"></i> Đăng Bài Viết</button>
-                        </div>
-                    </div>
-
-                    <!-- Forum Posts Feed -->
-                    <div id="forum-posts-feed" class="posts-feed">
-                        <!-- Dynamic forum posts -->
-                    </div>
+                <!-- Posts List -->
+                <div id="forumPostsList" class="space-y-4">
+                    <!-- Posts loaded here -->
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- USER PROFILE / OC ACCOUNT PAGE -->
-        <section id="page-tai-khoan" class="page-content">
-            <div class="section-title">
-                <h2>HỒ SƠ NHÂN VẬT (OC) & TÀI KHOẢN CÁ NHÂN</h2>
-                <div class="title-line"></div>
-            </div>
+            <!-- PAGE 7: TÀI KHOẢN CÁ NHÂN / HỒ SƠ -->
+            <section id="page-profile" class="page-section hidden space-y-6">
+                <div id="profileContainer" class="bg-dark-paper border border-red-900/80 p-6 rounded-lg max-w-4xl mx-auto shadow-2xl">
+                    <!-- Dynamic Profile Info -->
+                </div>
+            </section>
+        </main>
 
-            <div id="user-profile-display-area">
-                <!-- Rendered dynamically depending on login state -->
-            </div>
-        </section>
+        <!-- FOOTER -->
+        <footer class="bg-black border-t border-red-950 py-6 text-center text-xs text-gray-500 mt-auto">
+            <p>© 2026 TRÙNG HOA TÁI - Bản Quyền Thuộc Ban Điều Hành. Thiết kế cho Netlify & GitHub.</p>
+        </footer>
+    </div>
 
-    </main>
-
-    <!-- FOOTER -->
-    <footer class="main-footer">
-        <div class="footer-container container">
-            <div class="footer-info">
-                <h3>TRÙNG HOA TÁI ― 重 華 再</h3>
-                <p>Hệ thống Website quản lý Roleplay Kinh dị Sinh tồn Cổ đại Trung Hoa Đông Phương.</p>
-                <p>Email Ban Quản Lý: <code>kinhnha010@gmail.com</code> | <code>hamthien53@gmail.com</code></p>
+    <!-- MODAL: CART & INVENTORY -->
+    <div id="cartModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-dark-paper border border-red-800 w-full max-w-lg rounded-lg p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-red-900 pb-2">
+                <h3 class="text-lg font-bold text-red-500"><i class="fa-solid fa-bag-shopping"></i> GIỎ HÀNG (Tối đa 10 vật phẩm)</h3>
+                <button onclick="closeCartModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            <div class="footer-links">
-                <h4>LIÊN HỆ & CỘNG ĐỒNG</h4>
-                <a href="https://www.facebook.com/groups/1385121653516597" target="_blank"><i class="fa-brands fa-facebook"></i> Group Facebook Trùng Hoa Tái</a>
-                <a href="https://www.facebook.com/profile.php?id=61591857702519" target="_blank"><i class="fa-brands fa-facebook"></i> Fanpage Chính Thức</a>
+            <div id="cartItemsList" class="max-h-60 overflow-y-auto space-y-2 custom-scrollbar">
+                <!-- Cart items -->
+            </div>
+            <div class="border-t border-red-900 pt-3 flex justify-between items-center">
+                <span class="text-sm font-bold text-gold">Tổng chi phí: <span id="cartTotalCost">0</span> Hoa Tiền</span>
+                <button onclick="checkoutCart()" class="px-5 py-2 bg-red-900 hover:bg-red-800 text-white font-bold text-xs rounded border border-red-600">
+                    TIẾN HÀNH MUA HÀNG
+                </button>
             </div>
         </div>
-        <div class="copyright-bar">
-            © 2026 Trùng Hoa Tái Project. All Rights Reserved. Designed for Netlify & GitHub Deployment.
-        </div>
-    </footer>
+    </div>
 
-    <!-- MODALS SECTION -->
-
-    <!-- LOGIN / REGISTER MODAL -->
-    <div id="modal-auth" class="modal-overlay hidden">
-        <div class="modal-card">
-            <button class="modal-close" onclick="closeModal('modal-auth')">&times;</button>
-            <div class="auth-tabs">
-                <button class="auth-tab active" onclick="switchAuthTab('login')">ĐĂNG NHẬP</button>
-                <button class="auth-tab" onclick="switchAuthTab('register')">ĐĂNG KÝ OC MỚI</button>
+    <!-- MODAL: AUTHENTICATION (LOGIN / REGISTER) -->
+    <div id="authModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-dark-paper border border-red-800 w-full max-w-md rounded-lg p-6 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-red-900 pb-3 mb-4">
+                <h3 id="authModalTitle" class="text-lg font-bold text-red-600">ĐĂNG NHẬP / THIẾT LẬP BAN ĐIỀU HÀNH</h3>
+                <button onclick="closeAuthModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
 
-            <!-- LOGIN FORM -->
-            <form id="form-login" class="auth-form active" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label>Email hoặc Email Ban Quản Lý:</label>
-                    <input type="email" id="login-email" required placeholder="nhapemail@gmail.com">
+            <!-- Tab Auth Switch -->
+            <div class="flex border-b border-red-900 mb-4">
+                <button onclick="switchAuthTab('login')" id="tabBtnLogin" class="flex-1 py-2 text-center text-sm font-bold border-b-2 border-red-600 text-red-500">Đăng Nhập</button>
+                <button onclick="switchAuthTab('register')" id="tabBtnRegister" class="flex-1 py-2 text-center text-sm font-bold text-gray-400">Đăng Ký OC</button>
+            </div>
+
+            <!-- Form Login -->
+            <form id="formLogin" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Email / Tài khoản:</label>
+                    <input type="email" id="loginEmail" required placeholder="nhap@email.com" class="w-full bg-black border border-red-900 rounded p-2 text-sm text-white focus:outline-none focus:border-red-600">
                 </div>
-                <div class="form-group">
-                    <label>Mật Khẩu:</label>
-                    <input type="password" id="login-password" required placeholder="******">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Mật khẩu:</label>
+                    <input type="password" id="loginPassword" required placeholder="Mật khẩu" class="w-full bg-black border border-red-900 rounded p-2 text-sm text-white focus:outline-none focus:border-red-600">
                 </div>
-                <p class="text-xs color-gold">* Đăng nhập lần đầu với email Quản Lý (kinhnha010@gmail.com / hamthien53@gmail.com), hệ thống sẽ tự thiết lập mật khẩu quản lý ban đầu cho bạn.</p>
-                <button type="submit" class="btn-primary-red btn-block">Đăng Nhập</button>
+                <button type="submit" class="w-full py-2 bg-red-900 hover:bg-red-800 text-white font-bold text-sm rounded border border-red-600">ĐĂNG NHẬP</button>
             </form>
 
-            <!-- REGISTER FORM -->
-            <form id="form-register" class="auth-form" onsubmit="handleRegister(event)">
-                <div class="form-group">
-                    <label>Email Đăng Ký:</label>
-                    <input type="email" id="reg-email" required placeholder="emailcuaban@gmail.com">
+            <!-- Form Register -->
+            <form id="formRegister" onsubmit="handleRegister(event)" class="hidden space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
+                <div>
+                    <label class="block text-xs text-gray-300">Email:</label>
+                    <input type="email" id="regEmail" required class="w-full bg-black border border-red-900 rounded p-1.5 text-xs text-white">
                 </div>
-                <div class="form-group">
-                    <label>Mật Khẩu Tạo Mới:</label>
-                    <input type="password" id="reg-pass" required placeholder="******">
+                <div>
+                    <label class="block text-xs text-gray-300">Mật khẩu:</label>
+                    <input type="password" id="regPassword" required class="w-full bg-black border border-red-900 rounded p-1.5 text-xs text-white">
                 </div>
-                <div class="form-group">
-                    <label>Danh Tính OC (Tên Nhân Vật):</label>
-                    <input type="text" id="reg-oc-name" required placeholder="Ví dụ: Lục Vụ Chân">
+                <div>
+                    <label class="block text-xs text-gray-300">Danh tính OC:</label>
+                    <input type="text" id="regOC" required class="w-full bg-black border border-red-900 rounded p-1.5 text-xs text-white">
                 </div>
-                <div class="form-group">
-                    <label>Đường Link Facebook:</label>
-                    <input type="url" id="reg-fb-link" required placeholder="https://facebook.com/...">
+                <div>
+                    <label class="block text-xs text-gray-300">Đường link Facebook:</label>
+                    <input type="url" id="regFB" required class="w-full bg-black border border-red-900 rounded p-1.5 text-xs text-white">
                 </div>
-                <div class="form-group">
-                    <label>Xuất Thân (Thân Phận):</label>
-                    <input type="text" id="reg-origin" required placeholder="Con cháu thế gia, Đạo sĩ, Lang y...">
+                <div>
+                    <label class="block text-xs text-gray-300">Xuất thân:</label>
+                    <input type="text" id="regOrigin" placeholder="Con cháu thế gia / Giang hồ..." required class="w-full bg-black border border-red-900 rounded p-1.5 text-xs text-white">
                 </div>
-                <div class="form-group">
-                    <label>Niên Kỷ (Tuổi Tác):</label>
-                    <input type="number" id="reg-age" required placeholder="Ví dụ: 22">
+                <div>
+                    <label class="block text-xs text-gray-300">Niên kỷ (Tuổi):</label>
+                    <input type="number" id="regAge" required class="w-full bg-black border border-red-900 rounded p-1.5 text-xs text-white">
                 </div>
-                <div class="form-group">
-                    <label>Văn Án (Kịch Bản/Tiểu Sử):</label>
-                    <textarea id="reg-script" rows="3" required placeholder="Mô tả tóm tắt nhân vật..."></textarea>
+                <div>
+                    <label class="block text-xs text-gray-300">Văn án (Kịch bản nhân vật):</label>
+                    <textarea id="regScript" rows="2" required class="w-full bg-black border border-red-900 rounded p-1.5 text-xs text-white"></textarea>
                 </div>
-                <button type="submit" class="btn-primary-red btn-block">Gửi Yêu Cầu Tạo Tài Khoản (Đờị Duyệt)</button>
+                <button type="submit" class="w-full py-2 bg-red-900 text-white font-bold text-xs rounded border border-red-600">GỬI YÊU CẦU PHÊ DUYỆT</button>
             </form>
         </div>
     </div>
 
-    <!-- ADMIN PANEL MODAL -->
-    <div id="modal-admin-panel" class="modal-overlay hidden">
-        <div class="modal-card modal-lg">
-            <button class="modal-close" onclick="closeModal('modal-admin-panel')">&times;</button>
-            <h3><i class="fa-solid fa-user-shield"></i> BẢNG ĐIỀU HÀNH BAN QUẢN LÝ WEB</h3>
-            <div class="admin-tab-bar">
-                <button class="btn-sm btn-gold active" onclick="switchAdminTab('pending-users')">Duyệt Tài Khoản OC (<span id="count-pending">0</span>)</button>
-                <button class="btn-sm btn-gold" onclick="switchAdminTab('manage-users')">Quản Lý Tài Sản & User</button>
-                <button class="btn-sm btn-gold" onclick="switchAdminTab('site-images')">Đổi Link Ảnh Trang Chủ & Trang Trí</button>
-            </div>
+    <!-- JAVASCRIPT HỆ THỐNG TRỌN GÓI -->
+    <script>
+        // === STATE & STORAGE SYSTEM ===
+        const ADMIN_EMAILS = ['kinhnha010@gmail.com', 'hamthien53@gmail.com'];
+        let currentUser = JSON.parse(localStorage.getItem('tht_currentUser')) || null;
+        let viewMode = 'admin'; // 'admin' or 'player'
+        let cart = JSON.parse(localStorage.getItem('tht_cart')) || [];
 
-            <!-- Tab 1: Pending Users -->
-            <div id="admin-tab-pending-users" class="admin-tab-content active">
-                <h4>YÊU CẦU ĐĂNG KÝ TÀI KHOẢN CHỜ PHÊ DUYỆT</h4>
-                <div id="pending-users-list" class="pending-list">
-                    <!-- Dynamic pending items -->
+        // Sample Data Initialization
+        let products = JSON.parse(localStorage.getItem('tht_products')) || [
+            { id: 1, name: 'Bùa Thanh Tâm', price: 100, desc: 'Lá bùa màu xanh ngọc lục bảo mang dòng năng lượng tịnh hóa...', note: 'Dán lên trán hoặc đốt hòa nước uống.', limit: 3, img: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=400' },
+            { id: 2, name: 'Thuốc Trị Thương Hệ Thống', price: 150, desc: 'Lọ thuốc mỡ màu xanh sẫm chuyên trị các vết thương...', note: 'Không thể cứu sống nếu cạn sạch máu.', limit: 3, img: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400' },
+            { id: 3, name: 'Chuông Thanh Tâm', price: 250, desc: 'Chiếc chuông đồng nhỏ khắc Đạo văn trấn tâm bên ngoài.', note: 'Mỗi ngày chỉ sử dụng được 3 lần.', limit: 1, img: 'https://images.unsplash.com/photo-1514533450685-4493e01d1fdc?w=400' }
+        ];
+
+        let forumPosts = JSON.parse(localStorage.getItem('tht_posts')) || [
+            { id: 1, author: 'Hệ Thống', content: 'Thông báo: Khai mở máy chủ vương triều Trùng Hoa Tái.', isAnon: false, realAuthor: 'System', time: '2026-07-25' }
+        ];
+
+        let kimBangData = JSON.parse(localStorage.getItem('tht_kimbang')) || [
+            { rank: 1, name: 'Vịnh Quyển Trà', wealth: '100.000 Hoa Tiền', events: 15, title: 'Thiên Hạ Đệ Nhất' },
+            { rank: 2, name: 'Biện Thừa Chí', wealth: '85.000 Hoa Tiền', events: 14, title: 'Trấn Trạch Tông Sư' }
+        ];
+
+        // === INITIALIZATION ===
+        window.addEventListener('DOMContentLoaded', () => {
+            initApp();
+            renderProducts();
+            renderKimBang();
+            renderForum();
+            updateAuthUI();
+        });
+
+        function initApp() {
+            if (currentUser && ADMIN_EMAILS.includes(currentUser.email)) {
+                document.getElementById('adminViewSwitch').classList.remove('hidden');
+            }
+        }
+
+        function enterWorld() {
+            document.getElementById('portalScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            playAudio();
+        }
+
+        // === AUDIO CONTROL ===
+        function toggleAudio() {
+            const audio = document.getElementById('bgmAudio');
+            const icon = document.getElementById('audioIcon');
+            if (audio.paused) {
+                audio.play();
+                icon.className = 'fa-solid fa-volume-high text-red-500';
+            } else {
+                audio.pause();
+                icon.className = 'fa-solid fa-volume-xmark text-gray-400';
+            }
+        }
+
+        function playAudio() {
+            const audio = document.getElementById('bgmAudio');
+            audio.volume = 0.3;
+            audio.play().catch(() => console.log('Autoplay blocked'));
+        }
+
+        // === NAVIGATION ===
+        function switchPage(pageId) {
+            document.querySelectorAll('.page-section').forEach(sec => sec.classList.add('hidden'));
+            const target = document.getElementById('page-' + pageId);
+            if (target) target.classList.remove('hidden');
+        }
+
+        // === AUTHENTICATION & ADMIN ROLES ===
+        function openAuthModal() {
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+        function switchAuthTab(tab) {
+            if (tab === 'login') {
+                document.getElementById('formLogin').classList.remove('hidden');
+                document.getElementById('formRegister').classList.add('hidden');
+                document.getElementById('tabBtnLogin').className = 'flex-1 py-2 text-center text-sm font-bold border-b-2 border-red-600 text-red-500';
+                document.getElementById('tabBtnRegister').className = 'flex-1 py-2 text-center text-sm font-bold text-gray-400';
+            } else {
+                document.getElementById('formLogin').classList.add('hidden');
+                document.getElementById('formRegister').classList.remove('hidden');
+                document.getElementById('tabBtnRegister').className = 'flex-1 py-2 text-center text-sm font-bold border-b-2 border-red-600 text-red-500';
+                document.getElementById('tabBtnLogin').className = 'flex-1 py-2 text-center text-sm font-bold text-gray-400';
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const pass = document.getElementById('loginPassword').value.trim();
+
+            if (ADMIN_EMAILS.includes(email)) {
+                // Admin Login Handling
+                let adminPass = localStorage.getItem('admin_pass_' + email);
+                if (!adminPass) {
+                    // First time login setting password
+                    localStorage.setItem('admin_pass_' + email, pass);
+                    alert('Thiết lập mật khẩu Ban Điều Hành thành công!');
+                } else if (adminPass !== pass) {
+                    alert('Mật khẩu Ban Điều Hành không chính xác!');
+                    return;
+                }
+
+                currentUser = {
+                    email: email,
+                    ocName: email === 'kinhnha010@gmail.com' ? 'Vịnh Quyển Trà (Admin)' : 'Biện Thừa Chí (Admin)',
+                    isAdmin: true,
+                    wealth: 999999,
+                    congDuc: 9999,
+                    amDuc: 9999
+                };
+            } else {
+                // Regular Player Login simulation
+                currentUser = {
+                    email: email,
+                    ocName: 'Cư Dân Trùng Hoa',
+                    isAdmin: false,
+                    wealth: 1000,
+                    congDuc: 50,
+                    amDuc: 0,
+                    anonRenameCount: 0
+                };
+            }
+
+            localStorage.setItem('tht_currentUser', JSON.stringify(currentUser));
+            updateAuthUI();
+            closeAuthModal();
+            alert('Đăng nhập thành công!');
+            location.reload();
+        }
+
+        function updateAuthUI() {
+            const authNav = document.getElementById('authNav');
+            if (currentUser) {
+                authNav.innerHTML = `
+                    <button onclick="switchPage('profile')" class="px-3 py-1.5 bg-red-950 border border-red-700 text-gold text-xs rounded font-bold hover:bg-red-900">
+                        <i class="fa-solid fa-user"></i> ${currentUser.ocName}
+                    </button>
+                    <button onclick="handleLogout()" class="px-2 py-1.5 bg-gray-900 text-gray-400 text-xs rounded hover:text-white">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                `;
+                if (currentUser.isAdmin && viewMode === 'admin') {
+                    document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+                }
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('tht_currentUser');
+            currentUser = null;
+            location.reload();
+        }
+
+        function toggleViewMode() {
+            viewMode = document.getElementById('viewModeSelect').value;
+            if (viewMode === 'player') {
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+            } else {
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+            }
+        }
+
+        // === PRODUCTS / SHOP SYSTEM ===
+        function renderProducts() {
+            const grid = document.getElementById('productListGrid');
+            grid.innerHTML = products.map(p => `
+                <div class="bg-dark-paper border border-red-900/70 rounded-lg overflow-hidden flex flex-col justify-between shadow-lg">
+                    <img src="${p.img}" class="w-full h-40 object-cover border-b border-red-900">
+                    <div class="p-4 flex-grow space-y-2">
+                        <h3 class="font-bold text-red-500 text-lg">${p.name}</h3>
+                        <p class="text-xs text-gold font-semibold">Giá: ${p.price} Hoa Tiền | Giới hạn: ${p.limit}/tuần</p>
+                        <p class="text-xs text-gray-300"><strong>Mô tả:</strong> ${p.desc}</p>
+                        <p class="text-xs text-gray-400 italic"><strong>Lưu ý:</strong> ${p.note}</p>
+                    </div>
+                    <div class="p-4 border-t border-red-900/50 flex gap-2">
+                        <button onclick="addToCart(${p.id})" class="flex-1 py-1.5 bg-red-900 hover:bg-red-800 text-white text-xs font-bold rounded border border-red-600">
+                            + Thêm Vào Giỏ
+                        </button>
+                        <div class="admin-only hidden flex gap-1">
+                            <button onclick="deleteProduct(${p.id})" class="px-2 bg-red-950 border border-red-700 text-red-400 text-xs rounded"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            `).join('');
+            if (currentUser && currentUser.isAdmin && viewMode === 'admin') {
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+            }
+        }
 
-            <!-- Tab 2: Manage User Wealth -->
-            <div id="admin-tab-manage-users" class="admin-tab-content">
-                <h4>DANH SÁCH NGƯỜI CHƠI & ĐIỀU CHỈNH TÀI SẢN</h4>
-                <div id="admin-users-table-container">
-                    <!-- Dynamic users table -->
+        function addToCart(productId) {
+            if (cart.length >= 10) {
+                alert('Giỏ hàng đã đầy (Tối đa 10 vật phẩm). Vui lòng thanh toán hoặc xóa bớt!');
+                return;
+            }
+            const prod = products.find(p => p.id === productId);
+            if (prod) {
+                cart.push(prod);
+                localStorage.setItem('tht_cart', JSON.stringify(cart));
+                document.getElementById('cartCount').innerText = cart.length;
+                alert(`Đã thêm ${prod.name} vào giỏ hàng!`);
+            }
+        }
+
+        function openCartModal() {
+            const list = document.getElementById('cartItemsList');
+            let total = 0;
+            list.innerHTML = cart.map((item, idx) => {
+                total += item.price;
+                return `
+                    <div class="flex justify-between items-center bg-black/60 p-2 rounded border border-red-900 text-xs">
+                        <span>${item.name} - <strong class="text-gold">${item.price} Hoa Tiền</strong></span>
+                        <button onclick="removeFromCart(${idx})" class="text-red-500 hover:text-white"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('cartTotalCost').innerText = total;
+            document.getElementById('cartModal').classList.remove('hidden');
+        }
+
+        function closeCartModal() { document.getElementById('cartModal').classList.add('hidden'); }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            localStorage.setItem('tht_cart', JSON.stringify(cart));
+            document.getElementById('cartCount').innerText = cart.length;
+            openCartModal();
+        }
+
+        function checkoutCart() {
+            if (cart.length === 0) return alert('Giỏ hàng đang trống!');
+            let total = cart.reduce((sum, i) => sum + i.price, 0);
+            if (!currentUser) return alert('Vui lòng đăng nhập để mua hàng!');
+            if (currentUser.wealth < total) return alert('Tài sản Hoa Tiền không đủ! Đã bị đánh bại khi mua hàng.');
+
+            currentUser.wealth -= total;
+            cart = [];
+            localStorage.setItem('tht_cart', JSON.stringify([]));
+            localStorage.setItem('tht_currentUser', JSON.stringify(currentUser));
+            document.getElementById('cartCount').innerText = 0;
+            closeCartModal();
+            alert('Giao dịch thành công! Vật phẩm đã chuyển vào thùng hàng cá nhân.');
+        }
+
+        // === KIM BẢNG RENDER ===
+        function renderKimBang() {
+            const grid = document.getElementById('kimBangGrid');
+            grid.innerHTML = kimBangData.map(k => `
+                <div class="bg-dark-paper border-2 border-yellow-700/60 p-5 rounded-lg text-center relative shadow-xl">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-600 text-black font-extrabold px-3 py-0.5 rounded-full text-xs">
+                        HẠNG ${k.rank}
+                    </div>
+                    <h3 class="text-xl font-bold text-yellow-400 mt-2">${k.name}</h3>
+                    <p class="text-xs text-gray-300 mt-1">Danh hiệu: <span class="text-red-400">${k.title}</span></p>
+                    <div class="mt-4 border-t border-red-900/40 pt-2 text-xs space-y-1">
+                        <p>Tài phú: <strong class="text-gold">${k.wealth}</strong></p>
+                        <p>Dị sự hoàn thành: <strong>${k.events} Dị sự</strong></p>
+                    </div>
                 </div>
-            </div>
+            `).join('');
+        }
 
-            <!-- Tab 3: Site Images -->
-            <div id="admin-tab-site-images" class="admin-tab-content">
-                <h4>CẬP NHẬT LINK ẢNH TRANG TRÍ (DRIVER / ALBUM)</h4>
-                <div class="form-group">
-                    <label>Link Ảnh Banner Trang Chủ:</label>
-                    <input type="text" id="input-home-banner-link" placeholder="Link drive hoặc album công khai...">
-                    <button class="btn-sm btn-crimson mt-5" onclick="updateHomeBannerLink()">Cập Nhật Banner</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ADD GHOST MODAL -->
-    <div id="modal-add-ghost" class="modal-overlay hidden">
-        <div class="modal-card">
-            <button class="modal-close" onclick="closeModal('modal-add-ghost')">&times;</button>
-            <h3>THÊM / CHỈNH SỬA BÁCH QUỶ ÂM</h3>
-            <div class="form-group">
-                <label>Tên Quỷ Dị:</label>
-                <input type="text" id="ghost-name" placeholder="Ví dụ: Tân Nương Quỷ">
-            </div>
-            <div class="form-group">
-                <label>Mức Độ Nguy Hiểm:</label>
-                <select id="ghost-level">
-                    <option value="Du Hồn">Du Hồn</option>
-                    <option value="Oán Hồn">Oán Hồn</option>
-                    <option value="Lệ Quỷ">Lệ Quỷ</option>
-                    <option value="Hung Sát">Hung Sát</option>
-                    <option value="Quỷ Tướng">Quỷ Tướng</option>
-                    <option value="Quỷ Vương">Quỷ Vương</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Nguồn Gốc / Phân Loại:</label>
-                <input type="text" id="ghost-type" placeholder="Thủy Quỷ, Mộng Quỷ, Thi Quỷ...">
-            </div>
-            <div class="form-group">
-                <label>Đường Link Ảnh Minh Họa:</label>
-                <input type="text" id="ghost-img-url" placeholder="https://...">
-            </div>
-            <div class="form-group">
-                <label>Miêu Tả Sơ Lược:</label>
-                <textarea id="ghost-desc" rows="3"></textarea>
-            </div>
-            <div class="form-group">
-                <label>Điểm Yếu & Quy Luật (Khi đã mở khóa):</label>
-                <textarea id="ghost-weakness" rows="2"></textarea>
-            </div>
-            <button class="btn-primary-red btn-block" onclick="saveGhostItem()">Lưu Vào Bách Quỷ Âm</button>
-        </div>
-    </div>
-
-    <!-- ADD PRODUCT MODAL -->
-    <div id="modal-add-product" class="modal-overlay hidden">
-        <div class="modal-card">
-            <button class="modal-close" onclick="closeModal('modal-add-product')">&times;</button>
-            <h3>THÊM VẬT PHẨM VÀO THƯƠNG THÀNH</h3>
-            <div class="form-group">
-                <label>Tên sản phẩm:</label>
-                <input type="text" id="prod-name" placeholder="Bùa Thanh Tâm">
-            </div>
-            <div class="form-group">
-                <label>Phân loại shop:</label>
-                <select id="prod-shop-type">
-                    <option value="Phổ Thông">Thương Thành Thường (Hoa Tiền / Công Đức)</option>
-                    <option value="Hiếm">Thương Thành Hiếm (Âm Đức / Cao Cấp)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Giá (Ví dụ: 100 Hoa Tiền hoặc 50 Âm Đức):</label>
-                <input type="text" id="prod-price" placeholder="100 Hoa Tiền">
-            </div>
-            <div class="form-group">
-                <label>Mô tả vật phẩm:</label>
-                <textarea id="prod-desc" rows="2"></textarea>
-            </div>
-            <div class="form-group">
-                <label>Lưu ý:</label>
-                <input type="text" id="prod-note" placeholder="Dán lên trán...">
-            </div>
-            <div class="form-group">
-                <label>Giới hạn mua:</label>
-                <input type="text" id="prod-limit" placeholder="03 lá / tuần">
-            </div>
-            <div class="form-group">
-                <label>Đường link ảnh minh họa:</label>
-                <input type="text" id="prod-img" placeholder="https://...">
-            </div>
-            <button class="btn-primary-red btn-block" onclick="saveProductItem()">Thêm Vào Thương Thành</button>
-        </div>
-    </div>
-
-    <!-- RENAME ANON MODAL -->
-    <div id="modal-anon-rename" class="modal-overlay hidden">
-        <div class="modal-card">
-            <button class="modal-close" onclick="closeModal('modal-anon-rename')">&times;</button>
-            <h3>THAY ĐỔI TÊN ẨN DANH DIỄN ĐÀN</h3>
-            <p class="text-sm mb-10">Mỗi cá nhân được đổi miễn phí 2 lần. Lần thứ 3 trở đi sẽ tự động trừ <strong>30 Công Đức</strong> trong tài sản.</p>
-            <div class="form-group">
-                <label>Tên Ẩn Danh Mới:</label>
-                <input type="text" id="input-new-anon-name" placeholder="Ví dụ: Vô Danh Đạo Sĩ">
-            </div>
-            <button class="btn-primary-red btn-block" onclick="processAnonRename()">Xác Nhận Đổi Tên</button>
-        </div>
-    </div>
-
-    <!-- JAVASCRIPT APPLICATION CODE -->
-    <script src="script.js"></script>
+        // === SEARCH FUNCTION ===
+        function performGlobalSearch() {
+            const query = document.getElementById('globalSearchInput').value.toLowerCase().trim();
+            if (!query) return;
+            alert(`Đang tìm kiếm dữ liệu cho từ khóa: "${query}"...`);
+            // Custom search filter logic execution
+        }
+    </script>
 </body>
 </html>
-"""
-
-# Write index.html
-with open(f"{project_dir}/public/index.html", "w", encoding="utf-8") as f:
-    f.write(html_content)
-
-print("index.html created successfully.")
-# Write CSS stylesheet (style.css)
-css_content = """/* CSS RESET & VARIABLES */
-:root {
-    --bg-dark: #0a0606;
-    --bg-card: #140d0d;
-    --bg-card-hover: #1f1212;
-    --border-crimson: #8b0000;
-    --red-crimson: #a91b1b;
-    --red-bright: #e60000;
-    --gold-ancient: #d4af37;
-    --gold-bright: #ffd700;
-    --copper: #cd7f32;
-    --text-white: #f5f5f5;
-    --text-muted: #b3a2a2;
-    --font-heading: 'Noto Serif TC', 'Playfair Display', serif;
-    --font-seal: 'Ma Shan Zheng', cursive, serif;
-    --font-body: 'Noto Serif TC', system-ui, -apple-system, sans-serif;
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    background-color: var(--bg-dark);
-    color: var(--text-white);
-    font-family: var(--font-body);
-    line-height: 1.6;
-    overflow-x: hidden;
-    background-image: radial-gradient(#1f0000 1px, transparent 1px);
-    background-size: 30px 30px;
-}
-
-a {
-    color: var(--gold-ancient);
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-a:hover {
-    color: var(--gold-bright);
-}
-
-/* HELPER UTILITIES */
-.container {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0 15px;
-}
-
-.hidden {
-    display: none !important;
-}
-
-.mb-15 { margin-bottom: 15px; }
-.mt-5 { margin-top: 5px; }
-.mt-10 { margin-top: 10px; }
-.color-gold { color: var(--gold-ancient) !important; }
-.color-crimson { color: var(--red-bright) !important; }
-.color-copper { color: var(--copper) !important; }
-
-/* BUTTONS */
-.btn-primary-red {
-    background: linear-gradient(135deg, var(--red-crimson), #590000);
-    color: #fff;
-    border: 1px solid var(--red-bright);
-    padding: 10px 20px;
-    font-family: var(--font-heading);
-    font-weight: 600;
-    cursor: pointer;
-    border-radius: 4px;
-    box-shadow: 0 0 10px rgba(169, 27, 27, 0.4);
-    transition: all 0.3s;
-}
-
-.btn-primary-red:hover {
-    background: linear-gradient(135deg, var(--red-bright), var(--red-crimson));
-    box-shadow: 0 0 15px rgba(230, 0, 0, 0.8);
-    transform: translateY(-2px);
-}
-
-.btn-sm {
-    padding: 6px 12px;
-    font-size: 0.85rem;
-    border-radius: 3px;
-    cursor: pointer;
-}
-
-.btn-gold {
-    background: linear-gradient(135deg, #b8860b, #604500);
-    color: #fff;
-    border: 1px solid var(--gold-ancient);
-}
-
-.btn-crimson {
-    background: var(--red-crimson);
-    color: #fff;
-    border: 1px solid var(--red-bright);
-}
-
-.btn-dark {
-    background: #333;
-    color: #fff;
-    border: 1px solid #555;
-}
-
-.btn-block {
-    width: 100%;
-    display: block;
-}
-
-/* PORTAL OVERLAY */
-.portal-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(5, 2, 2, 0.96) url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1200') center/cover no-repeat;
-    background-blend-mode: multiply;
-    z-index: 99999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-}
-
-.portal-content {
-    background: rgba(10, 5, 5, 0.9);
-    border: 2px solid var(--border-crimson);
-    padding: 40px 30px;
-    max-width: 650px;
-    width: 90%;
-    box-shadow: 0 0 30px rgba(230, 0, 0, 0.5), inset 0 0 15px rgba(139, 0, 0, 0.5);
-    border-radius: 8px;
-    animation: fadeInPortal 1s ease-in-out;
-}
-
-.portal-seal {
-    font-family: var(--font-seal);
-    font-size: 3rem;
-    color: var(--red-bright);
-    text-shadow: 0 0 10px var(--red-bright);
-}
-
-.portal-title {
-    font-family: var(--font-heading);
-    font-size: 2.8rem;
-    color: var(--gold-bright);
-    letter-spacing: 4px;
-    margin: 10px 0;
-}
-
-.portal-subtitle {
-    font-size: 1.2rem;
-    color: var(--text-muted);
-    margin-bottom: 15px;
-}
-
-.portal-desc {
-    color: var(--text-white);
-    font-size: 1.1rem;
-    margin-bottom: 20px;
-}
-
-.portal-warning {
-    background: rgba(139, 0, 0, 0.3);
-    border-left: 4px solid var(--red-bright);
-    padding: 10px;
-    font-size: 0.9rem;
-    color: #ffb3b3;
-    margin-bottom: 25px;
-}
-
-.btn-portal {
-    background: linear-gradient(135deg, var(--red-bright), #800000);
-    color: #fff;
-    border: 2px solid var(--gold-ancient);
-    padding: 15px 35px;
-    font-family: var(--font-heading);
-    font-size: 1.2rem;
-    cursor: pointer;
-    border-radius: 5px;
-    box-shadow: 0 0 20px rgba(230, 0, 0, 0.8);
-    transition: all 0.3s;
-}
-
-.btn-portal:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 30px var(--red-bright);
-}
-
-.btn-subtext {
-    display: block;
-    font-size: 0.75rem;
-    opacity: 0.8;
-}
-
-.portal-founders {
-    margin-top: 30px;
-    border-top: 1px solid rgba(139, 0, 0, 0.5);
-    padding-top: 15px;
-}
-
-.portal-founders h4 {
-    font-size: 0.85rem;
-    color: var(--gold-ancient);
-    margin-bottom: 10px;
-}
-
-.founder-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-}
-
-.founder-tags a {
-    font-size: 0.8rem;
-    background: rgba(20, 10, 10, 0.8);
-    border: 1px solid #333;
-    padding: 4px 8px;
-    border-radius: 3px;
-}
-
-/* ADMIN VIEW FLOATING BAR */
-.admin-view-bar {
-    position: sticky;
-    top: 0;
-    z-index: 10000;
-    background: #100000;
-    border-bottom: 2px solid var(--gold-ancient);
-    padding: 10px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.badge-admin {
-    background: var(--red-crimson);
-    color: #fff;
-    padding: 3px 8px;
-    border-radius: 3px;
-    font-size: 0.8rem;
-    font-weight: bold;
-    margin-right: 10px;
-}
-
-/* MAIN HEADER & NAV */
-.main-header {
-    background: rgba(15, 8, 8, 0.95);
-    border-bottom: 2px solid var(--border-crimson);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.8);
-    position: sticky;
-    top: 0;
-    z-index: 999;
-}
-
-.header-container {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 10px 15px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-}
-
-.logo-area {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-}
-
-.logo-seal {
-    font-family: var(--font-seal);
-    font-size: 2.5rem;
-    background: var(--red-crimson);
-    color: #fff;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 5px;
-    border: 1px solid var(--gold-ancient);
-}
-
-.logo-text h1 {
-    font-family: var(--font-heading);
-    font-size: 1.5rem;
-    color: var(--gold-bright);
-    letter-spacing: 2px;
-}
-
-.logo-text .sub {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-
-.nav-menu {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-}
-
-.nav-link {
-    color: var(--text-white);
-    font-size: 0.95rem;
-    font-family: var(--font-heading);
-    padding: 6px 12px;
-    border-radius: 4px;
-    transition: all 0.2s;
-}
-
-.nav-link:hover, .nav-link.active {
-    background: rgba(169, 27, 27, 0.3);
-    color: var(--gold-bright);
-    border-bottom: 2px solid var(--red-bright);
-}
-
-.user-action-area {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.btn-icon {
-    background: #201010;
-    color: var(--gold-ancient);
-    border: 1px solid #444;
-    padding: 8px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-/* SEARCH BAR */
-.global-search-box {
-    margin: 20px 0;
-    display: flex;
-    background: var(--bg-card);
-    border: 1px solid var(--border-crimson);
-    border-radius: 5px;
-    overflow: hidden;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-}
-
-.search-icon {
-    padding: 12px 15px;
-    color: var(--gold-ancient);
-}
-
-#global-search-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    color: #fff;
-    padding: 10px;
-    font-size: 1rem;
-}
-
-#global-search-input:focus {
-    outline: none;
-}
-
-.btn-search {
-    background: var(--red-crimson);
-    color: #fff;
-    border: none;
-    padding: 0 20px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-/* CONTENT PAGES SPA */
-.page-content {
-    display: none;
-    padding: 20px 0;
-    animation: fadeInPage 0.4s ease-in-out;
-}
-
-.page-content.active {
-    display: block;
-}
-
-@keyframes fadeInPage {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.section-title {
-    text-align: center;
-    margin-bottom: 30px;
-}
-
-.section-title h2 {
-    font-family: var(--font-heading);
-    color: var(--gold-bright);
-    font-size: 2rem;
-    letter-spacing: 2px;
-}
-
-.sub-title-desc {
-    color: var(--text-muted);
-    font-size: 0.95rem;
-    margin-top: 5px;
-}
-
-.title-line {
-    width: 100px;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, var(--red-bright), transparent);
-    margin: 10px auto 0;
-}
-
-/* HERO BANNER */
-.hero-banner {
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 2px solid var(--border-crimson);
-    margin-bottom: 25px;
-    max-height: 380px;
-}
-
-.banner-img {
-    width: 100%;
-    height: 380px;
-    object-fit: cover;
-    filter: brightness(0.7) contrast(1.1);
-}
-
-.banner-overlay {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    background: linear-gradient(to top, rgba(10, 0, 0, 0.95), transparent);
-    padding: 30px;
-}
-
-.banner-overlay h2 {
-    font-family: var(--font-heading);
-    color: var(--gold-bright);
-    font-size: 1.8rem;
-}
-
-/* CARDS & CONTENT STYLING */
-.content-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-crimson);
-    border-radius: 6px;
-    padding: 25px;
-    margin-bottom: 25px;
-}
-
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #301010;
-    padding-bottom: 12px;
-    margin-bottom: 15px;
-}
-
-.card-header h3 {
-    color: var(--gold-ancient);
-    font-size: 1.3rem;
-}
-
-.styled-text p {
-    margin-bottom: 12px;
-}
-
-.styled-text strong {
-    color: var(--gold-bright);
-}
-
-.alert-box-crimson {
-    background: rgba(169, 27, 27, 0.2);
-    border: 1px solid var(--red-bright);
-    padding: 12px 15px;
-    border-radius: 4px;
-    margin-top: 15px;
-}
-
-/* FEATURE GRID */
-.feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px;
-}
-
-.feature-item {
-    background: var(--bg-card);
-    border: 1px solid #301010;
-    padding: 20px;
-    border-radius: 6px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.feature-item:hover {
-    border-color: var(--red-bright);
-    transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(230,0,0,0.3);
-}
-
-.feature-icon {
-    font-size: 2.5rem;
-    color: var(--red-bright);
-    margin-bottom: 10px;
-}
-
-.feature-item h4 {
-    color: var(--gold-ancient);
-    margin-bottom: 8px;
-}
-
-/* TABS SYSTEM */
-.tab-buttons {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #301010;
-    flex-wrap: wrap;
-}
-
-.tab-btn {
-    background: transparent;
-    color: var(--text-muted);
-    border: none;
-    padding: 10px 18px;
-    font-family: var(--font-heading);
-    font-size: 1rem;
-    cursor: pointer;
-}
-
-.tab-btn.active {
-    color: var(--gold-bright);
-    border-bottom: 3px solid var(--red-bright);
-    background: rgba(169, 27, 27, 0.2);
-}
-
-.tab-content {
-    display: none;
-}
-
-.tab-content.active {
-    display: block;
-}
-
-.grid-3col {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-}
-
-.money-box {
-    background: #1a0d0d;
-    border: 1px solid #401515;
-    padding: 15px;
-    border-radius: 5px;
-}
-
-/* GEOGRAPHY CARDS */
-.geo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-}
-
-.geo-card {
-    background: var(--bg-card);
-    border: 1px solid #401515;
-    padding: 20px;
-    border-radius: 6px;
-    position: relative;
-}
-
-.geo-card h4 {
-    color: var(--gold-bright);
-    font-size: 1.3rem;
-}
-
-.geo-loc {
-    display: inline-block;
-    font-size: 0.8rem;
-    color: var(--red-bright);
-    margin-bottom: 10px;
-}
-
-.geo-card.danger-zone {
-    border: 1px solid var(--red-bright);
-    background: rgba(40, 5, 5, 0.8);
-}
-
-.geo-card.camsa-zone {
-    border: 2px solid var(--gold-ancient);
-    background: rgba(30, 20, 5, 0.8);
-}
-
-/* GHOST CARDS */
-.filter-bar {
-    margin-bottom: 20px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.filter-btn {
-    background: #201010;
-    color: var(--text-muted);
-    border: 1px solid #444;
-    padding: 6px 14px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.filter-btn.active {
-    background: var(--red-crimson);
-    color: #fff;
-    border-color: var(--red-bright);
-}
-
-.ghost-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-}
-
-.ghost-card {
-    background: var(--bg-card);
-    border: 1px solid #401515;
-    border-radius: 6px;
-    overflow: hidden;
-    transition: all 0.3s;
-}
-
-.ghost-card:hover {
-    border-color: var(--red-bright);
-}
-
-.ghost-img {
-    width: 100%;
-    height: 180px;
-    object-fit: cover;
-}
-
-.ghost-info {
-    padding: 15px;
-}
-
-.ghost-badge {
-    display: inline-block;
-    background: var(--red-crimson);
-    color: #fff;
-    font-size: 0.75rem;
-    padding: 2px 8px;
-    border-radius: 3px;
-    float: right;
-}
-
-/* QUEST BOARD */
-.quest-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.quest-item {
-    background: var(--bg-card);
-    border-left: 4px solid var(--gold-ancient);
-    padding: 18px;
-    border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.quest-item.rank-phi { border-left-color: #ff0000; }
-.quest-item.rank-hoang { border-left-color: #ffd700; }
-.quest-item.rank-ngan { border-left-color: #c0c0c0; }
-
-/* SHOP LAYOUT */
-.shop-layout {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 25px;
-}
-
-@media (max-width: 900px) {
-    .shop-layout {
-        grid-template-columns: 1fr;
-    }
-}
-
-.shop-tabs {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.shop-tab-btn {
-    background: #201010;
-    color: #ccc;
-    border: 1px solid #444;
-    padding: 8px 15px;
-    cursor: pointer;
-    border-radius: 4px;
-}
-
-.shop-tab-btn.active {
-    background: var(--red-crimson);
-    color: #fff;
-}
-
-.product-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
-}
-
-.product-card {
-    background: var(--bg-card);
-    border: 1px solid #401515;
-    border-radius: 6px;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.product-img {
-    width: 100%;
-    height: 140px;
-    object-fit: cover;
-    border-radius: 4px;
-    margin-bottom: 10px;
-}
-
-.product-title {
-    font-family: var(--font-heading);
-    color: var(--gold-bright);
-    font-size: 1.1rem;
-}
-
-.product-price {
-    color: var(--red-bright);
-    font-weight: bold;
-    font-size: 1rem;
-    margin: 5px 0;
-}
-
-.product-details {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-bottom: 10px;
-}
-
-/* CART SIDEBAR */
-.cart-box {
-    background: var(--bg-card);
-    border: 1px solid var(--border-crimson);
-    border-radius: 6px;
-    padding: 20px;
-    position: sticky;
-    top: 90px;
-}
-
-.cart-items-list {
-    min-height: 150px;
-    max-height: 300px;
-    overflow-y: auto;
-    margin: 15px 0;
-    border-top: 1px solid #301010;
-    border-bottom: 1px solid #301010;
-    padding: 10px 0;
-}
-
-.cart-item-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 0;
-    font-size: 0.85rem;
-}
-
-.btn-checkout-gold {
-    width: 100%;
-    background: linear-gradient(135deg, var(--gold-bright), var(--gold-ancient));
-    color: #000;
-    border: none;
-    padding: 10px;
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 4px;
-    margin-top: 10px;
-}
-
-/* KIM BANG RANKING */
-.kim-bang-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 25px;
-}
-
-.rank-card {
-    background: var(--bg-card);
-    border: 1px solid var(--gold-ancient);
-    border-radius: 8px;
-    padding: 20px;
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
-}
-
-.rank-avatar {
-    width: 90px;
-    height: 90px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--gold-bright);
-}
-
-.rank-badge-num {
-    font-family: var(--font-seal);
-    font-size: 2rem;
-    color: var(--gold-bright);
-}
-
-/* FORUM & ANONYMOUS SYSTEM */
-.forum-layout {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 25px;
-}
-
-@media (max-width: 850px) {
-    .forum-layout {
-        grid-template-columns: 1fr;
-    }
-}
-
-.anon-profile-box, .forum-rules-box {
-    background: var(--bg-card);
-    border: 1px solid #401515;
-    border-radius: 6px;
-    padding: 15px;
-    margin-bottom: 20px;
-}
-
-.editor-toolbar {
-    display: flex;
-    gap: 5px;
-    margin: 8px 0;
-    background: #1a0d0d;
-    padding: 5px;
-    border-radius: 4px;
-}
-
-.editor-toolbar button {
-    background: #333;
-    color: #fff;
-    border: none;
-    padding: 4px 10px;
-    cursor: pointer;
-    border-radius: 3px;
-}
-
-.post-form-controls input, .post-form-controls textarea {
-    width: 100%;
-    background: #180a0a;
-    border: 1px solid #401515;
-    color: #fff;
-    padding: 10px;
-    border-radius: 4px;
-    margin-bottom: 8px;
-}
-
-.posts-feed {
-    margin-top: 25px;
-}
-
-.forum-post-card {
-    background: var(--bg-card);
-    border: 1px solid #401515;
-    border-radius: 6px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
-
-.post-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #301010;
-    padding-bottom: 10px;
-    margin-bottom: 12px;
-}
-
-.post-author {
-    color: var(--gold-bright);
-    font-weight: bold;
-}
-
-.post-img-attach {
-    max-width: 100%;
-    max-height: 350px;
-    object-fit: cover;
-    border-radius: 4px;
-    margin-top: 12px;
-}
-
-/* MODALS */
-.modal-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(0, 0, 0, 0.85);
-    z-index: 100000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-card {
-    background: #140808;
-    border: 2px solid var(--border-crimson);
-    border-radius: 8px;
-    padding: 30px;
-    width: 90%;
-    max-width: 500px;
-    position: relative;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.modal-card.modal-lg {
-    max-width: 800px;
-}
-
-.modal-close {
-    position: absolute;
-    top: 12px; right: 15px;
-    background: transparent;
-    border: none;
-    color: #fff;
-    font-size: 1.8rem;
-    cursor: pointer;
-}
-
-.auth-tabs, .admin-tab-bar {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.auth-tab, .admin-tab-bar button {
-    flex: 1;
-    padding: 10px;
-    background: #201010;
-    color: #ccc;
-    border: none;
-    cursor: pointer;
-}
-
-.auth-tab.active {
-    background: var(--red-crimson);
-    color: #fff;
-}
-
-.auth-form {
-    display: none;
-}
-
-.auth-form.active {
-    display: block;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    color: var(--gold-ancient);
-    font-size: 0.9rem;
-}
-
-.form-group input, .form-group textarea, .form-group select {
-    width: 100%;
-    padding: 10px;
-    background: #1a0c0c;
-    border: 1px solid #401515;
-    color: #fff;
-    border-radius: 4px;
-}
-
-/* ADMIN TAB CONTENTS */
-.admin-tab-content {
-    display: none;
-}
-
-.admin-tab-content.active {
-    display: block;
-}
-
-/* FOOTER */
-.main-footer {
-    background: #080303;
-    border-top: 2px solid var(--border-crimson);
-    padding: 40px 0 0;
-    margin-top: 50px;
-}
-
-.footer-container {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 30px;
-    padding-bottom: 30px;
-}
-
-.copyright-bar {
-    text-align: center;
-    background: #000;
-    padding: 12px;
-    font-size: 0.8rem;
-    color: #777;
-}
-
-/* RESPONSIVE DESIGN */
-@media (max-width: 768px) {
-    .header-container {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-    
-    .nav-menu {
-        overflow-x: auto;
-        width: 100%;
-        padding-bottom: 5px;
-    }
-    
-    .portal-title {
-        font-size: 2rem;
-    }
-}
-"""
-
-with open(f"{project_dir}/public/style.css", "w", encoding="utf-8") as f:
-    f.write(css_content)
-
-print("style.css created successfully.")
